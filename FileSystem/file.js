@@ -1,4 +1,7 @@
 const fs = require("fs");
+const os = require("os");
+console.log(os.cpus().length);
+
 //sync
 // fs.writeFileSync("./test.txt", "Learning File system");
 
@@ -18,7 +21,33 @@ const fs = require("fs");
 //   }
 // });
 
-fs.appendFileSync("./test.txt", `Hello Again \n`);
+// fs.appendFileSync("./test.txt", `Hello Again \n`);
 // fs.copyFileSync("./test.txt", "./copy.txt");
 // fs.unlinkSync("./copy.txt");
-fs.mkdirSync("my-Docs");
+// fs.mkdirSync("my-Docs");
+
+// Node Js works/Event handling
+
+// Blocking operation
+// console.log("1");
+
+// let result = fs.readFileSync("./test.txt", "utf-8");
+// console.log(result);
+// console.log(2);
+// console.log(3);
+// console.log(4);
+// console.log(5);
+
+//Non-Blocking Operation
+// console.log("1");
+
+fs.readFile("read.txt", "utf-8", (err, result) => {
+  //   console.log(result);
+});
+// console.log(2);
+// console.log(3);
+// console.log(4);
+// console.log(5);
+
+// thread pool size by default 4
+// max thread cpus console.log(os.cpus().length);
