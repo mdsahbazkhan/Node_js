@@ -35,12 +35,28 @@ app
     return res.json(user);
   })
   .patch((req, res) => {
-    // TODO Edit User with id
-    res.json({ status: "pending " });
+    const body = req.body;
+    const id = Number(req.params.id);
+    const user = users.find((user) => user.id == id);
+    if (!user) {
+      return res.json({ status: "error", message: "User not found" });
+    }
+    Object.assign(user, body);
+
+    fs.writeFile("./MOCK_DATA.json", JSON.stringify(users), (err) => {
+      if (err) {
+        return res.json({ status: "error", message: "Failed to update file" });
+      } else {
+        return res.json({ status: "succes", message: "User updated", user });
+      }
+    });
   })
   .delete((req, res) => {
-    // TODO delete User with id
-    res.json({ status: "pending " });
+    const id = Number(req.params.id);
+    const updaterUsers = users.filter((user) => user.id != id);
+    fs.writeFile("./MOCK_DATA.json", JSON.stringify(updaterUsers), (err) => {
+      return res.json({ status: "success", message: "User deleted" });
+    });
   });
 
 app.post("/api/users", (req, res) => {
