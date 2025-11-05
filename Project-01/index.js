@@ -6,6 +6,15 @@ const users = require("./MOCK_DATA.json");
 
 //Middleware
 app.use(express.urlencoded({ extended: false }));
+app.use((req, res, next) => {
+  fs.appendFile(
+    "log.txt",
+    `${Date.now()}:${req.method}:${req.path}\n`,
+    (err, data) => {
+      next();
+    }
+  );
+});
 
 app.get("/users", (req, res) => {
   const html = `
@@ -32,6 +41,9 @@ app
   .get((req, res) => {
     const id = Number(req.params.id);
     const user = users.find((user) => user.id === id);
+    if (!user) {
+      return res.status(404).json({ error: "User Not Found" });
+    }
     return res.json(user);
   })
   .patch((req, res) => {
@@ -61,9 +73,19 @@ app
 
 app.post("/api/users", (req, res) => {
   const body = req.body;
+  if (
+    !body ||
+    !body.first_name ||
+    body.last_name ||
+    body.email ||
+    body.email ||
+    body.job - title
+  ) {
+    return res.status(400).json({ msg: "All field are required." });
+  }
   users.push({ ...body, id: users.length + 1 });
   fs.writeFile("./MOCK_DATA.json", JSON.stringify(users), (err, data) => {
-    return res.json({ status: "succes", id: users.length });
+    return res.status(201).json({ status: "succes", id: users.length });
   });
 });
 
