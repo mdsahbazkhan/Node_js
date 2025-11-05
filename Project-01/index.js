@@ -3,7 +3,36 @@ const fs = require("fs");
 const app = express();
 const PORT = 3000;
 const users = require("./MOCK_DATA.json");
+const mongoose = require("mongoose");
 
+//MongoDB Connection
+mongoose
+  .connect("mongodb://127.0.0.1:27017/learning_nodejs")
+  .then(() => console.log("MongoDB Connected"))
+  .catch((err) => console.log("MongoDB Error", err));
+//Schema
+const userSchema = new mongoose.Schema({
+  firstName: {
+    type: String,
+    required: true,
+  },
+  lastName: {
+    type: String,
+  },
+  email: {
+    type: String,
+    required: true,
+    unique: true,
+  },
+  gender: {
+    type: String,
+    required: true,
+  },
+  jobTitle: {
+    type: String,
+  },
+});
+const User = new mongoose.model("user", userSchema);
 //Middleware
 app.use(express.urlencoded({ extended: false }));
 app.use((req, res, next) => {
@@ -71,22 +100,30 @@ app
     });
   });
 
-app.post("/api/users", (req, res) => {
+app.post("/api/users", async (req, res) => {
   const body = req.body;
   if (
     !body ||
     !body.first_name ||
-    body.last_name ||
-    body.email ||
-    body.email ||
-    body.job - title
+    !body.last_name ||
+    !body.email ||
+    !body.gender ||
+    !body.job - title
   ) {
     return res.status(400).json({ msg: "All field are required." });
   }
-  users.push({ ...body, id: users.length + 1 });
-  fs.writeFile("./MOCK_DATA.json", JSON.stringify(users), (err, data) => {
-    return res.status(201).json({ status: "succes", id: users.length });
+  // users.push({ ...body, id: users.length + 1 });
+  // fs.writeFile("./MOCK_DATA.json", JSON.stringify(users), (err, data) => {
+  //   return res.status(201).json({ status: "succes", id: users.length });
+  // });
+  const result = await User.create({
+    firstName: body.first_name,
+    lastName: body.last_name,
+    email: body.email,
+    gender: body.gender,
+    jobTitle: body.job - title,
   });
+  return res.status(201).json({});
 });
 
 app.listen(PORT, () => {
