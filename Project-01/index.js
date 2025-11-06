@@ -2,8 +2,8 @@ const express = require("express");
 const fs = require("fs");
 const app = express();
 const PORT = 3000;
-const users = require("./MOCK_DATA.json");
 const mongoose = require("mongoose");
+const { timeStamp } = require("console");
 
 //MongoDB Connection
 mongoose
@@ -11,28 +11,31 @@ mongoose
   .then(() => console.log("MongoDB Connected"))
   .catch((err) => console.log("MongoDB Error", err));
 //Schema
-const userSchema = new mongoose.Schema({
-  firstName: {
-    type: String,
-    required: true,
+const userSchema = new mongoose.Schema(
+  {
+    firstName: {
+      type: String,
+      required: true,
+    },
+    lastName: {
+      type: String,
+    },
+    email: {
+      type: String,
+      required: true,
+      unique: true,
+    },
+    gender: {
+      type: String,
+      required: true,
+    },
+    jobTitle: {
+      type: String,
+    },
   },
-  lastName: {
-    type: String,
-  },
-  email: {
-    type: String,
-    required: true,
-    unique: true,
-  },
-  gender: {
-    type: String,
-    required: true,
-  },
-  jobTitle: {
-    type: String,
-  },
-});
-const User = new mongoose.model("user", userSchema);
+  { timestamps: true }
+);
+const User = mongoose.model("user", userSchema);
 //Middleware
 app.use(express.urlencoded({ extended: false }));
 app.use((req, res, next) => {
@@ -45,15 +48,16 @@ app.use((req, res, next) => {
   );
 });
 
-app.get("/users", (req, res) => {
+app.get("/users", async (req, res) => {
+  const allDbUsers = await User.find({});
   const html = `
     <ul>
-    ${users
+    ${allDbUsers
       .map(
         (user) =>
           `
         <li>
-        ${user.first_name}
+        ${user.firstName}-${user.email}
         </li>`
       )
       .join("")}
@@ -62,42 +66,46 @@ app.get("/users", (req, res) => {
   res.send(html);
 });
 //Route
-app.get("/api/users", (req, res) => {
-  return res.json(users);
+app.get("/api/users", async (req, res) => {
+  const allDbUsers = await User.find({});
+  return res.json(allDbUsers);
 });
 app
   .route("/api/users/:id")
-  .get((req, res) => {
-    const id = Number(req.params.id);
-    const user = users.find((user) => user.id === id);
+  .get(async (req, res) => {
+    const user = await User.findById(req.params.id);
     if (!user) {
       return res.status(404).json({ error: "User Not Found" });
     }
     return res.json(user);
   })
-  .patch((req, res) => {
-    const body = req.body;
-    const id = Number(req.params.id);
-    const user = users.find((user) => user.id == id);
-    if (!user) {
-      return res.json({ status: "error", message: "User not found" });
-    }
-    Object.assign(user, body);
-
-    fs.writeFile("./MOCK_DATA.json", JSON.stringify(users), (err) => {
-      if (err) {
-        return res.json({ status: "error", message: "Failed to update file" });
+  .patch(async (req, res) => {
+    try {
+      const body = req.body;
+      const user = await User.findByIdAndUpdate(
+        req.params.id,
+        {
+          firstName: body.first_name,
+          lastName: body.last_name,
+          email: body.email,
+          gender: body.gender,
+          jobTitle: body.job_title,
+        },
+        { new: true }
+      );
+      if (!user) {
+        return res.json({ status: "error", message: "User not found" });
       } else {
-        return res.json({ status: "succes", message: "User updated", user });
+        return res.json({ status: "success", message: "User updated", user });
       }
-    });
+    } catch (error) {
+      console.error(error);
+      return res.json({ status: "error", message: "Something went wrong" });
+    }
   })
-  .delete((req, res) => {
-    const id = Number(req.params.id);
-    const updaterUsers = users.filter((user) => user.id != id);
-    fs.writeFile("./MOCK_DATA.json", JSON.stringify(updaterUsers), (err) => {
-      return res.json({ status: "success", message: "User deleted" });
-    });
+  .delete(async (req, res) => {
+    await User.findByIdAndDelete(req.params.id);
+    return res.json({ status: "success", message: "User deleted" });
   });
 
 app.post("/api/users", async (req, res) => {
@@ -108,22 +116,20 @@ app.post("/api/users", async (req, res) => {
     !body.last_name ||
     !body.email ||
     !body.gender ||
-    !body.job - title
+    !body.job_title
   ) {
     return res.status(400).json({ msg: "All field are required." });
   }
-  // users.push({ ...body, id: users.length + 1 });
-  // fs.writeFile("./MOCK_DATA.json", JSON.stringify(users), (err, data) => {
-  //   return res.status(201).json({ status: "succes", id: users.length });
-  // });
+
   const result = await User.create({
     firstName: body.first_name,
     lastName: body.last_name,
     email: body.email,
     gender: body.gender,
-    jobTitle: body.job - title,
+    jobTitle: body.job_title,
   });
-  return res.status(201).json({});
+
+  return res.status(201).json({ msg: "success" });
 });
 
 app.listen(PORT, () => {
